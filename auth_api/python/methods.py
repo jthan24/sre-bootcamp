@@ -19,7 +19,7 @@ class Token:
         print(cursor)
         
         # Execute the query
-        query = "SELECT username, password, salt FROM users WHERE username = %s"
+        query = "SELECT username, password, salt, role FROM users WHERE username = %s"
         cursor.execute(query, (username,))
 
         # Fetch the results
@@ -38,21 +38,33 @@ class Token:
             # Check if the hashes match
             if result[1] == hashed_password:
                 # User authenticated, generate JWT access token
-                payload = {'username': username}
-                secret_key = 'my2w7wjd7yXF64FIADfJxNs1oupTGAuW'
+                payload = {'role': result[3]}
+                secret_key = os.environ.get('JWTTOKEN')
                 access_token = jwt.encode(payload, secret_key, algorithm='HS256')
                 print("Access token:", access_token)
                 return access_token
             else:
                 print("Hashed passwords wrong")
-                return "Invalid username or password"
-
         else:
             print("Invalid username or password")
-            return "Invalid username or password"
+        raise Exception ("Invalid username or password")
 
 
 class Restricted:
 
     def access_data(self, authorization):
-        return 'test'
+        try:
+            # Verify the JWT token with the secret key
+            secret_key = os.environ.get('JWTTOKEN')
+            decoded_token = jwt.decode(authorization.replace('Bearer ', ''), secret_key, algorithms='HS256')
+
+            # Check the contents of the JWT token
+            print ("Current user from the token " + decoded_token['username'])
+            return "You are under protected data"
+        except jwt.exceptions.InvalidSignatureError:
+            print("Token signature is invalid.")
+        except jwt.exceptions.DecodeError:
+            print("Unable to decode token.")
+        except jwt.exceptions.InvalidTokenError:
+            print("Token is invalid.")
+        return "You can't access to this area"

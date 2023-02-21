@@ -25,10 +25,14 @@ def url_health():
 def url_login():
     username = request.form['username']
     password = request.form['password']
-    res = {
-        "data": login.generate_token(username, password)
-    }
-    return jsonify(res)
+    try:
+        res = {
+            "data": login.generate_token(username, password)
+        }
+        return jsonify(res)
+    except:
+        return jsonify(message="Wrong username or password"), 403
+        
 
 
 # # e.g. http://127.0.0.1:8000/protected
@@ -38,7 +42,7 @@ def url_protected():
     res = {
         "data": protected.access_data(auth_token)
     }
-    return jsonify(res)
+    return jsonify(res), 403
 
 
 if __name__ == '__main__':
